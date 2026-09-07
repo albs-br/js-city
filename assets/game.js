@@ -432,9 +432,12 @@ function updateTimeSpeedButtons() {
 
 // === UI updates ===
 function update() {
+	const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+	const monthIndex = month % 12;
+	const year = 1900 + Math.floor(month / 12);
 	document.querySelector('#funds').textContent = funds;
 	document.querySelector('#pop').textContent = population;
-	document.querySelector('#year').textContent = 1900 + Math.floor(month / 12);
+	document.querySelector('#year').textContent = `${months[monthIndex]} ${year}`;
 }
 
 function gameLoop(timestamp) {
