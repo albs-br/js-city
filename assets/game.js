@@ -17,6 +17,9 @@ let tool = 'road';
 let funds = 5000;
 let month = 0;
 let population = 0;
+let timeSpeed = 'paused';
+let timeAccumulator = 0;
+let lastFrameTime = 0;
 
 // === Pricing and tile metadata ===
 const prices = { road: 10, res: 100, com: 150, ind: 125, park: 50, bulldozer: 5 };
@@ -400,11 +403,63 @@ function startNewGame() {
 	update();
 }
 
+function advanceMonth() {
+	month++;
+	const homes = grid.flat().filter((tile) => tile === 'res').length;
+	const roads = grid.flat().filter((tile) => tile === 'road').length;
+
+	population = Math.max(0, homes * 8 + Math.floor(roads / 2));
+	funds += grid.flat().filter((tile) => tile === 'com' || tile === 'ind').length * 35 - Math.max(0, homes - roads) * 8;
+
+	document.querySelector('#report').textContent = population
+		? 'A new month begins. Growth is steady.'
+		: 'Build homes beside roads to attract citizens.';
+
+	persistGame();
+	draw();
+	update();
+}
+
+function updateTimeSpeedButtons() {
+	document.querySelectorAll('.time-controls button').forEach((button) => {
+		button.classList.toggle('selected', button.id === {
+			paused: 'pause-time',
+			slow: 'slow-time',
+			fast: 'fast-time'
+		}[timeSpeed]);
+	});
+}
+
 // === UI updates ===
 function update() {
 	document.querySelector('#funds').textContent = funds;
 	document.querySelector('#pop').textContent = population;
 	document.querySelector('#year').textContent = 1900 + Math.floor(month / 12);
+}
+
+function gameLoop(timestamp) {
+	if (!lastFrameTime) {
+		lastFrameTime = timestamp;
+	}
+
+	const delta = timestamp - lastFrameTime;
+	lastFrameTime = timestamp;
+
+	if (timeSpeed === 'slow') {
+		timeAccumulator += delta;
+		if (timeAccumulator >= 1500) {
+			timeAccumulator = 0;
+			advanceMonth();
+		}
+	} else if (timeSpeed === 'fast') {
+		timeAccumulator += delta;
+		if (timeAccumulator >= 500) {
+			timeAccumulator = 0;
+			advanceMonth();
+		}
+	}
+
+	requestAnimationFrame(gameLoop);
 }
 
 // === Tool selection ===
@@ -552,20 +607,22 @@ canvas.onclick = (event) => {
 
 // === City progression ===
 document.querySelector('#advance').onclick = () => {
-	month++;
-	const homes = grid.flat().filter((tile) => tile === 'res').length;
-	const roads = grid.flat().filter((tile) => tile === 'road').length;
+	advanceMonth();
+};
 
-	population = Math.max(0, homes * 8 + Math.floor(roads / 2));
-	funds += grid.flat().filter((tile) => tile === 'com' || tile === 'ind').length * 35 - Math.max(0, homes - roads) * 8;
+document.querySelector('#pause-time').onclick = () => {
+	timeSpeed = 'paused';
+	updateTimeSpeedButtons();
+};
 
-	document.querySelector('#report').textContent = population
-		? 'A new month begins. Growth is steady.'
-		: 'Build homes beside roads to attract citizens.';
+document.querySelector('#slow-time').onclick = () => {
+	timeSpeed = 'slow';
+	updateTimeSpeedButtons();
+};
 
-	persistGame();
-	draw();
-	update();
+document.querySelector('#fast-time').onclick = () => {
+	timeSpeed = 'fast';
+	updateTimeSpeedButtons();
 };
 
 // === Save / load buttons ===
@@ -583,6 +640,8 @@ document.querySelector('#new-game').onclick = () => {
 };
 
 // === Start the game ===
+updateTimeSpeedButtons();
+requestAnimationFrame(gameLoop);
 loadTiles()
 	.then(() => {
 		loadGame(false);

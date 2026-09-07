@@ -38,6 +38,26 @@ h1 {
 	letter-spacing: 2px;
 }
 
+.topbar-left {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.time-controls {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.time-controls button {
+	padding: 6px 8px;
+	font-size: 11px;
+	text-align: center;
+	white-space: nowrap;
+}
+
 .stats {
 	display: flex;
 	gap: 14px;
