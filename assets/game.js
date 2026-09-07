@@ -384,6 +384,22 @@ function loadGame(showMessage = true) {
 	}
 }
 
+function startNewGame() {
+	for (let y = 0; y < rows; y++) {
+		for (let x = 0; x < cols; x++) {
+			grid[y][x] = 'land';
+		}
+	}
+	blockMap.clear();
+	funds = 5000;
+	month = 0;
+	population = 0;
+	localStorage.removeItem(SAVE_KEY);
+	document.querySelector('#report').textContent = 'New city started.';
+	draw();
+	update();
+}
+
 // === UI updates ===
 function update() {
 	document.querySelector('#funds').textContent = funds;
@@ -560,6 +576,10 @@ document.querySelector('#save-game').onclick = () => {
 
 document.querySelector('#load-game').onclick = () => {
 	loadGame();
+};
+
+document.querySelector('#new-game').onclick = () => {
+	startNewGame();
 };
 
 // === Start the game ===

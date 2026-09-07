@@ -68,6 +68,12 @@ aside {
 	gap: 9px;
 }
 
+.action-row {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px;
+}
+
 button {
 	border: 3px solid #31515a;
 	background: #f4edb5;
@@ -75,6 +81,12 @@ button {
 	font: inherit;
 	cursor: pointer;
 	text-align: left;
+}
+
+.action-row button {
+	text-align: center;
+	padding: 8px 4px;
+	white-space: nowrap;
 }
 
 button:hover,
