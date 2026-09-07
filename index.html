@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>JS City</title>
+	<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+	<section class="game">
+		<header>
+			<h1>JS CITY</h1>
+			<div class="stats">
+				<span>YEAR <b id="year">1900</b></span>
+				<span>FUNDS $<b id="funds">5000</b></span>
+				<span>POP <b id="pop">0</b></span>
+			</div>
+		</header>
+
+		<main>
+			<canvas id="city" width="640" height="480"></canvas>
+
+			<aside>
+				<button class="tool selected" data-tool="road">▦ ROAD $10</button>
+				<button class="tool" data-tool="res">⌂ RESIDENTIAL $100</button>
+				<button class="tool" data-tool="com">▥ COMMERCIAL $150</button>
+				<button class="tool" data-tool="ind">▤ INDUSTRIAL $125</button>
+				<button class="tool" data-tool="park">♣ PARK $50</button>
+				<button class="tool" data-tool="bulldozer">⌫ BULLDOZER $5</button>
+				<button id="advance">▶ NEXT MONTH</button>
+
+				<div class="panel">
+					CITY REPORT<br>
+					<span id="report">Lay the first road.</span>
+				</div>
+
+				<div class="panel help">
+					Click tiles to build.<br>
+					Roads connect zones.<br>
+					Keep residents happy!
+				</div>
+			</aside>
+		</main>
+	</section>
+
+	<script src="assets/game.js" defer></script>
+</body>
+</html>
