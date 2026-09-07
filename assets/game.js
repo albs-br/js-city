@@ -6,6 +6,7 @@ const backgroundCtx = backgroundCanvas.getContext('2d');
 const cols = 32;
 const rows = 24;
 const size = 20;
+const SAVE_KEY = 'js-city-save-v1';
 const grid = Array.from({ length: rows }, () => Array(cols).fill('land'));
 let hoverPlacement = null;
 
@@ -253,6 +254,136 @@ function drawHoverPreview() {
 	ctx.restore();
 }
 
+function getCellFromEvent(event) {
+	const rect = canvas.getBoundingClientRect();
+	const cellX = Math.floor((event.clientX - rect.left) / rect.width * cols);
+	const cellY = Math.floor((event.clientY - rect.top) / rect.height * rows);
+	return { x: cellX, y: cellY };
+}
+
+function getRoadLineCells(startCell, endCell) {
+	const cells = [];
+	const dx = endCell.x - startCell.x;
+	const dy = endCell.y - startCell.y;
+	const steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+	if (steps === 0) {
+		return [{ x: startCell.x, y: startCell.y }];
+	}
+
+	for (let i = 0; i <= steps; i++) {
+		const x = Math.round(startCell.x + (dx * i) / steps);
+		const y = Math.round(startCell.y + (dy * i) / steps);
+		cells.push({ x, y });
+	}
+
+	return cells.filter((cell, index, arr) => {
+		return arr.findIndex((other) => other.x === cell.x && other.y === cell.y) === index;
+	});
+}
+
+function placeRoadStretch(startCell, endCell) {
+	const cells = getRoadLineCells(startCell, endCell).filter(({ x, y }) => {
+		return x >= 0 && x < cols && y >= 0 && y < rows;
+	});
+
+	if (!cells.length) {
+		document.querySelector('#report').textContent = 'That road is out of bounds.';
+		return;
+	}
+
+	const newRoads = [];
+	for (const { x, y } of cells) {
+		if (grid[y][x] === 'land') {
+			newRoads.push({ x, y });
+		} else if (grid[y][x] !== 'road') {
+			document.querySelector('#report').textContent = 'Roads can only be placed on empty land.';
+			return;
+		}
+	}
+
+	if (funds < prices.road * newRoads.length) {
+		document.querySelector('#report').textContent = 'Not enough funds!';
+		return;
+	}
+
+	for (const { x, y } of newRoads) {
+		grid[y][x] = 'road';
+	}
+
+	funds -= prices.road * newRoads.length;
+	document.querySelector('#report').textContent = newRoads.length > 1
+		? 'Road stretch laid.'
+		: 'ROAD placed.';
+	persistGame();
+	draw();
+	update();
+}
+
+// === Save/load ===
+function persistGame() {
+	const payload = {
+		funds,
+		month,
+		population,
+		grid: grid.map((row) => [...row]),
+		blockMap: Array.from(blockMap.entries())
+	};
+
+	try {
+		localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+	} catch (error) {
+		console.error('Failed to save game:', error);
+	}
+}
+
+function loadGame(showMessage = true) {
+	const raw = localStorage.getItem(SAVE_KEY);
+	if (!raw) {
+		if (showMessage) {
+			document.querySelector('#report').textContent = 'No saved city found.';
+		}
+		return false;
+	}
+
+	try {
+		const saved = JSON.parse(raw);
+		if (!saved || !Array.isArray(saved.grid)) {
+			throw new Error('Invalid save data');
+		}
+
+		for (let y = 0; y < rows; y++) {
+			for (let x = 0; x < cols; x++) {
+				grid[y][x] = saved.grid[y]?.[x] ?? 'land';
+			}
+		}
+
+		funds = Number(saved.funds ?? 5000);
+		month = Number(saved.month ?? 0);
+		population = Number(saved.population ?? 0);
+		blockMap.clear();
+
+		if (Array.isArray(saved.blockMap)) {
+			for (const [key, value] of saved.blockMap) {
+				blockMap.set(key, value);
+			}
+		}
+
+		if (showMessage) {
+			document.querySelector('#report').textContent = 'City loaded.';
+		}
+		draw();
+		update();
+		return true;
+	} catch (error) {
+		console.error('Failed to load game:', error);
+		if (showMessage) {
+			document.querySelector('#report').textContent = 'Save file could not be loaded.';
+		}
+		return false;
+	}
+}
+
 // === UI updates ===
 function update() {
 	document.querySelector('#funds').textContent = funds;
@@ -274,16 +405,47 @@ canvas.addEventListener('mousemove', (event) => {
 	canvas._hoverX = event.clientX;
 	canvas._hoverY = event.clientY;
 	drawHoverPreview();
+
+	if (tool === 'road' && canvas._draggingRoad) {
+		const cell = getCellFromEvent(event);
+		if (cell.x !== canvas._dragEndCell?.x || cell.y !== canvas._dragEndCell?.y) {
+			canvas._dragEndCell = cell;
+			draw();
+		}
+	}
 });
 
 canvas.addEventListener('mouseleave', () => {
 	canvas._hoverX = null;
 	canvas._hoverY = null;
+	canvas._draggingRoad = false;
+	canvas._dragStartCell = null;
+	canvas._dragEndCell = null;
 	drawHoverPreview();
+});
+
+canvas.addEventListener('pointerdown', (event) => {
+	if (tool !== 'road') return;
+	const cell = getCellFromEvent(event);
+	canvas._draggingRoad = true;
+	canvas._dragStartCell = cell;
+	canvas._dragEndCell = cell;
+	canvas.setPointerCapture?.(event.pointerId);
+});
+
+canvas.addEventListener('pointerup', (event) => {
+	if (!canvas._draggingRoad || tool !== 'road') return;
+	const cell = getCellFromEvent(event);
+	placeRoadStretch(canvas._dragStartCell, cell);
+	canvas._draggingRoad = false;
+	canvas._dragStartCell = null;
+	canvas._dragEndCell = null;
 });
 
 // === Building interaction ===
 canvas.onclick = (event) => {
+	if (tool === 'road') return;
+
 	// Convert the browser click position into a grid cell, accounting for canvas scaling.
 	const rect = canvas.getBoundingClientRect();
 	const centerX = Math.floor((event.clientX - rect.left) / rect.width * cols);
@@ -367,6 +529,7 @@ canvas.onclick = (event) => {
 	document.querySelector('#report').textContent = tool === 'bulldozer'
 		? 'Area cleared.'
 		: tool.toUpperCase() + ' block placed.';
+	persistGame();
 	draw();
 	update();
 };
@@ -384,13 +547,25 @@ document.querySelector('#advance').onclick = () => {
 		? 'A new month begins. Growth is steady.'
 		: 'Build homes beside roads to attract citizens.';
 
+	persistGame();
 	draw();
 	update();
+};
+
+// === Save / load buttons ===
+document.querySelector('#save-game').onclick = () => {
+	persistGame();
+	document.querySelector('#report').textContent = 'Game saved.';
+};
+
+document.querySelector('#load-game').onclick = () => {
+	loadGame();
 };
 
 // === Start the game ===
 loadTiles()
 	.then(() => {
+		loadGame(false);
 		draw();
 		update();
 	})

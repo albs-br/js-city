@@ -1,6 +1,6 @@
 # JS City
 
-This is a tiny SimCity-style experiment built in , made as Proof-of-concept for vibecoding game development.
+This is a tiny SimCity-style experiment built in JavaScript, made as Proof-of-concept for vibecoding game development.
 
 ## How it works
 
@@ -10,7 +10,7 @@ This is a tiny SimCity-style experiment built in , made as Proof-of-concept for 
 - keep the city balanced enough to keep things running
 
 ## Play it
-
+ 
 Open the project in a browser and start clicking around.
 
 It is meant to be a casual little experiment, not a full game or a polished product.
