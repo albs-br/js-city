@@ -25,6 +25,11 @@ let lastFrameTime = 0;
 const prices = { road: 10, res: 100, com: 150, ind: 125, park: 50, bulldozer: 5 };
 const tileImages = {};
 const blockMap = new Map();
+const buildingDensityMap = {
+	res: ['res-low', 'res-medium', 'res-high'],
+	com: ['com-low', 'com-medium', 'com-high'],
+	ind: ['ind-low', 'ind-medium', 'ind-high']
+};
 const tileSources = {
 	land: 'assets/land.svg',
 	road: 'assets/road-0.svg',
@@ -44,9 +49,18 @@ const tileSources = {
 	'road-13': 'assets/road-13.svg',
 	'road-14': 'assets/road-14.svg',
 	'road-15': 'assets/road-15.svg',
-	res: 'assets/residential.svg',
-	com: 'assets/commercial.svg',
-	ind: 'assets/industrial.svg',
+	res: 'assets/res-medium.svg',
+	'res-low': 'assets/res-low.svg',
+	'res-medium': 'assets/res-medium.svg',
+	'res-high': 'assets/res-high.svg',
+	com: 'assets/com-medium.svg',
+	'com-low': 'assets/com-low.svg',
+	'com-medium': 'assets/com-medium.svg',
+	'com-high': 'assets/com-high.svg',
+	ind: 'assets/ind-medium.svg',
+	'ind-low': 'assets/ind-low.svg',
+	'ind-medium': 'assets/ind-medium.svg',
+	'ind-high': 'assets/ind-high.svg',
 	park: 'assets/park.svg'
 };
 
@@ -92,6 +106,12 @@ function drawRoadTile(x, y) {
 		ctx.fillStyle = '#76b7a7';
 		ctx.fillRect(px, py, size, size);
 	}
+}
+
+function getBuildingDensityKey(tool) {
+	const variants = buildingDensityMap[tool] || [tool];
+	const tier = Math.min(2, Math.max(0, Math.floor(population / 120)));
+	return variants[tier] || variants[0];
 }
 
 function registerBlock(originX, originY, tileKey) {
@@ -591,7 +611,7 @@ canvas.onclick = (event) => {
 
 	// Track new buildings for rendering, or remove the old building records when clearing.
 	if (blockTools.includes(tool)) {
-		registerBlock(originX, originY, tool);
+		registerBlock(originX, originY, getBuildingDensityKey(tool));
 	} else if (tool === 'bulldozer') {
 		for (const [x, y] of cells) {
 			blockMap.delete(`${x},${y}`);
